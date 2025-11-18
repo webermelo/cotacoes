@@ -113,13 +113,74 @@ else:
     dados_cliente["telefone"] = st.text_input("Telefone")
 
 # ---------------------------
-# 4) Itens da cotação (estrutura inicial)
+# # ---------------------------
+# 4) Itens da Cotação
 # ---------------------------
 st.subheader("4. Itens da Cotação")
 
-qtd_itens = st.number_input("Quantos itens deseja adicionar?", min_value=1, max_value=20, value=1)
+qtd_itens = st.number_input(
+    "Quantos itens deseja adicionar?",
+    min_value=1,
+    max_value=20,
+    value=1,
+    step=1,
+)
 
-st.info("A parte dos itens será construída no próximo passo.")
+itens = []
+total_geral = 0.0
+
+for i in range(int(qtd_itens)):
+    st.markdown(f"### Item {i + 1}")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        produto = st.text_input("Produto", key=f"produto_{i}")
+    with col2:
+        ncm = st.text_input("NCM", key=f"ncm_{i}")
+
+    descricao = st.text_area("Descrição", key=f"descricao_{i}")
+
+    col3, col4, col5 = st.columns(3)
+    with col3:
+        preco_unitario = st.number_input(
+            "Preço unitário (R$)",
+            min_value=0.0,
+            value=0.0,
+            step=0.01,
+            key=f"preco_{i}",
+        )
+    with col4:
+        quantidade = st.number_input(
+            "Quantidade",
+            min_value=1,
+            value=1,
+            step=1,
+            key=f"quant_{i}",
+        )
+    with col5:
+        prazo_entrega = st.text_input("Prazo de entrega", key=f"prazo_{i}")
+
+    total_item = preco_unitario * quantidade
+    total_geral += total_item
+
+    st.write(f"**Total do item {i + 1}: R$ {total_item:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+
+    itens.append(
+        {
+            "produto": produto,
+            "descricao": descricao,
+            "preco_unitario": f"{preco_unitario:.2f}".replace(".", ","),
+            "quantidade": str(int(quantidade)),
+            "ncm": ncm,
+            "total": f"{total_item:.2f}".replace(".", ","),
+            "prazo_entrega": prazo_entrega,
+        }
+    )
+
+st.markdown(
+    f"## TOTAL DA COTAÇÃO: R$ {total_geral:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+)
+
 
 # ---------------------------
 # 5) Gerar PDF (placeholder)
