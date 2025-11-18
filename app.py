@@ -11,14 +11,21 @@ from core import (
 
 st.set_page_config(page_title="Cotações Mokka/Moica", page_icon="📄")
 
-st.title("Gerador de Cotações – Mokka / Moica")
-
-st.write("Versão web da ferramenta de cotações. Preencha os dados e gere o PDF.")
+# ---------------------------
+# Estado inicial (sessão)
+# ---------------------------
+if "dados_cliente" not in st.session_state:
+    st.session_state["dados_cliente"] = {}
+if "cnpj_cliente" not in st.session_state:
+    st.session_state["cnpj_cliente"] = ""
 
 
 def format_currency(valor: float) -> str:
     return f"{valor:.2f}".replace(".", ",")
 
+
+st.title("Gerador de Cotações – Mokka / Moica")
+st.write("Versão web da ferramenta de cotações. Preencha os dados e gere o PDF.")
 
 # ---------------------------
 # 1) Seleção da empresa
@@ -94,11 +101,17 @@ modo_cliente = st.radio(
     ["Buscar pelo CNPJ (API)", "Preencher manualmente"],
 )
 
-dados_cliente = {}
-cnpj_cliente = ""
+# Vamos sempre trabalhar em cima de uma cópia do estado
+dados_cliente_state = st.session_state["dados_cliente"]
 
 if modo_cliente == "Buscar pelo CNPJ (API)":
-    cnpj_cliente = st.text_input("CNPJ do Cliente", placeholder="00.000.000/0000-00")
+    cnpj_cliente = st.text_input(
+        "CNPJ do Cliente",
+        placeholder="00.000.000/0000-00",
+        value=st.session_state["cnpj_cliente"],
+    )
+    # Atualiza na sessão o que o usuário digitou
+    st.session_state["cnpj_cliente"] = cnpj_cliente
 
     if st.button("Buscar dados do cliente"):
         if not cnpj_cliente.strip():
@@ -113,16 +126,49 @@ if modo_cliente == "Buscar pelo CNPJ (API)":
                 if dados.get("telefone"):
                     st.write(f"**Telefone:** {dados['telefone']}")
 
-                dados_cliente.update(dados)
+                # Salva os dados do cliente no estado da sessão
+                st.session_state["dados_cliente"] = dados
 
             except Exception as e:
                 st.error(f"Erro ao buscar dados do cliente: {e}")
 
+    # Mostrar dados atuais do cliente (se já estiverem na sessão)
+    if st.session_state["dados_cliente"]:
+        dc = st.session_state["dados_cliente"]
+        st.info(
+            f"Cliente atual: **{dc.get('razao_social', '')}** - "
+            f"{dc.get('endereco', '')} - {dc.get('cidade_uf_cep', '')}"
+        )
+
 else:
-    dados_cliente["razao_social"] = st.text_input("Razão Social")
-    dados_cliente["endereco"] = st.text_input("Endereço")
-    dados_cliente["cidade_uf_cep"] = st.text_input("Cidade - UF - CEP")
-    dados_cliente["telefone"] = st.text_input("Telefone")
+    # modo manual: usamos os valores já salvos como default
+    razao = st.text_input(
+        "Razão Social",
+        value=dados_cliente_state.get("razao_social", ""),
+    )
+    endereco = st.text_input(
+        "Endereço",
+        value=dados_cliente_state.get("endereco", ""),
+    )
+    cidade_uf_cep = st.text_input(
+        "Cidade - UF - CEP",
+        value=dados_cliente_state.get("cidade_uf_cep", ""),
+    )
+    telefone = st.text_input(
+        "Telefone",
+        value=dados_cliente_state.get("telefone", ""),
+    )
+
+    st.session_state["dados_cliente"] = {
+        "razao_social": razao,
+        "endereco": endereco,
+        "cidade_uf_cep": cidade_uf_cep,
+        "telefone": telefone,
+    }
+
+# No restante do app, vamos sempre ler daqui:
+dados_cliente = st.session_state["dados_cliente"]
+cnpj_cliente = st.session_state["cnpj_cliente"]
 
 # ---------------------------
 # 5) Itens da Cotação
@@ -234,7 +280,7 @@ if st.button("Gerar PDF"):
             gerar_cotacao_pdf(
                 dados_cliente=dados_cliente,
                 itens=itens,
-                prazo_pagamento=prazo_pagamento,
+                prazo_pagamento=pubreplyturemapagamento,
                 frete_tipo=frete_tipo,
                 output=buffer,
                 numero_sequencial=numero_sequencial,
