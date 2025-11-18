@@ -191,7 +191,16 @@ def gerar_cotacao_pdf(
     aspect_ratio = original_height / original_width
     desired_height = desired_width * aspect_ratio
 
-    c = canvas.Canvas(str(output), pagesize=A4)
+    # Se for um buffer (BytesIO), passamos direto; se for Path/str, convertemos para str
+    try:
+        from os import PathLike
+        is_path = isinstance(output, (str, Path, PathLike))
+    except Exception:
+        is_path = isinstance(output, (str, Path))
+
+    target = str(output) if is_path else output
+    c = canvas.Canvas(target, pagesize=A4)
+
 
     page_number = 1
 

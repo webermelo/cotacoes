@@ -307,12 +307,14 @@ if st.button("Gerar PDF"):
 
             st.success(f"Cotação #{numero_sequencial} gerada com sucesso!")
 
+            pdf_bytes = buffer.getvalue()   # garante conteúdo
             st.download_button(
                 label="Baixar PDF da cotação",
-                data=buffer,
+                data=pdf_bytes,
                 file_name=nome_arquivo,
                 mime="application/pdf",
             )
+
 
             st.info(f"Arquivo também salvo no servidor em: {caminho_pdf}")
 
