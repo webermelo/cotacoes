@@ -183,24 +183,21 @@ def gerar_cotacao_pdf(
     if not logo_path.exists():
         raise FileNotFoundError(f"Arquivo de logo não encontrado: {logo_path}")
 
-    logo_image = Image.open(logo_path)
-    original_width, original_height = logo_image.size
+    # Abre o logo apenas para pegar o tamanho
+    with Image.open(logo_path) as logo_image:
+        original_width, original_height = logo_image.size
 
     width, height = A4
     desired_width = width * logo_percent
     aspect_ratio = original_height / original_width
     desired_height = desired_width * aspect_ratio
 
-    # Se for um buffer (BytesIO), passamos direto; se for Path/str, convertemos para str
-    try:
-        from os import PathLike
-        is_path = isinstance(output, (str, Path, PathLike))
-    except Exception:
-        is_path = isinstance(output, (str, Path))
-
-    target = str(output) if is_path else output
-    c = canvas.Canvas(target, pagesize=A4)
-
+    # Se 'output' for BytesIO (tem .write), passamos direto.
+    # Se for caminho (str/Path), convertemos pra string.
+    if hasattr(output, "write"):
+        c = canvas.Canvas(output, pagesize=A4)
+    else:
+        c = canvas.Canvas(str(output), pagesize=A4)
 
     page_number = 1
 

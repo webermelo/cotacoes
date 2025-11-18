@@ -101,7 +101,6 @@ modo_cliente = st.radio(
     ["Buscar pelo CNPJ (API)", "Preencher manualmente"],
 )
 
-# Trabalhamos em cima do estado salvo
 dados_cliente_state = st.session_state["dados_cliente"]
 
 if modo_cliente == "Buscar pelo CNPJ (API)":
@@ -110,7 +109,6 @@ if modo_cliente == "Buscar pelo CNPJ (API)":
         placeholder="00.000.000/0000-00",
         value=st.session_state["cnpj_cliente"],
     )
-    # Atualiza na sessão
     st.session_state["cnpj_cliente"] = cnpj_cliente
 
     if st.button("Buscar dados do cliente"):
@@ -126,13 +124,11 @@ if modo_cliente == "Buscar pelo CNPJ (API)":
                 if dados.get("telefone"):
                     st.write(f"**Telefone:** {dados['telefone']}")
 
-                # Salva os dados do cliente na sessão
                 st.session_state["dados_cliente"] = dados
 
             except Exception as e:
                 st.error(f"Erro ao buscar dados do cliente: {e}")
 
-    # Mostrar dados atuais do cliente (se já estiverem na sessão)
     if st.session_state["dados_cliente"]:
         dc = st.session_state["dados_cliente"]
         st.info(
@@ -141,7 +137,6 @@ if modo_cliente == "Buscar pelo CNPJ (API)":
         )
 
 else:
-    # modo manual: usamos os valores já salvos como default
     razao = st.text_input(
         "Razão Social",
         value=dados_cliente_state.get("razao_social", ""),
@@ -166,7 +161,6 @@ else:
         "telefone": telefone,
     }
 
-# Para o resto do app, usamos sempre estes:
 dados_cliente = st.session_state["dados_cliente"]
 cnpj_cliente = st.session_state["cnpj_cliente"]
 
@@ -248,7 +242,6 @@ st.markdown(
 st.subheader("6. Gerar Cotação")
 
 if st.button("Gerar PDF"):
-    # Validações básicas
     if not dados_cliente.get("razao_social"):
         st.error("Preencha os dados do cliente ou faça a busca pelo CNPJ antes de gerar a cotação.")
     elif not prazo_pagamento.strip():
@@ -256,7 +249,6 @@ if st.button("Gerar PDF"):
     elif not itens:
         st.error("Adicione pelo menos um item.")
     else:
-        # Valida itens
         for idx, item in enumerate(itens, start=1):
             if not all(
                 [
@@ -275,7 +267,6 @@ if st.button("Gerar PDF"):
         try:
             numero_sequencial = obter_numero_sequencial()
 
-            # Gera PDF em memória
             buffer = BytesIO()
             gerar_cotacao_pdf(
                 dados_cliente=dados_cliente,
@@ -289,14 +280,13 @@ if st.button("Gerar PDF"):
             )
 
             buffer.seek(0)
+            pdf_bytes = buffer.getvalue()
 
-            # Salva PDF localmente no servidor (pasta do app)
             nome_arquivo = f"Cotacao_{empresa}_{numero_sequencial}.pdf"
             caminho_pdf = BASE_DIR / nome_arquivo
             with open(caminho_pdf, "wb") as f:
-                f.write(buffer.getvalue())
+                f.write(pdf_bytes)
 
-            # Registra no Excel
             adicionar_dados_excel(
                 dados_cliente=dados_cliente,
                 itens=itens,
@@ -307,14 +297,12 @@ if st.button("Gerar PDF"):
 
             st.success(f"Cotação #{numero_sequencial} gerada com sucesso!")
 
-            pdf_bytes = buffer.getvalue()   # garante conteúdo
             st.download_button(
                 label="Baixar PDF da cotação",
                 data=pdf_bytes,
                 file_name=nome_arquivo,
                 mime="application/pdf",
             )
-
 
             st.info(f"Arquivo também salvo no servidor em: {caminho_pdf}")
 
